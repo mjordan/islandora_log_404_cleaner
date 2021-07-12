@@ -1,0 +1,8 @@
+name: 'Islandora Log 404 Cleaner'
+description: "Module to implement https://github.com/Islandora/documentation/issues/1812."
+type: module
+package: Islandora
+core: 8.x
+core_version_requirement: ^8 || ^9
+dependencies:
+  - islandora
