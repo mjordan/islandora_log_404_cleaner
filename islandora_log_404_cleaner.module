@@ -4,6 +4,32 @@
  * Implements hook_cron().
  */
 function islandora_log_404_cleaner_cron() {
-  
+  islandora_log_404_cleaner_remove_entries();
 }
 
+function islandora_log_404_cleaner_remove_entries() {
+  $database = \Drupal::database();
+  $entries_result = $database->query("SELECT wid, location FROM {watchdog} WHERE type = 'page not found' AND location LIKE '%_format=json'");
+  $stale_not_founds = [];
+  foreach ($entries_result as $row) {
+    $client = \Drupal::httpClient();
+    try {
+      $result = $client->head($row->location);
+      if ($result->getStatusCode() == 200 && str_contains($row->location, '/media/')) {
+        $stale_not_founds[] = $row->wid;
+      }
+    }
+    catch (ClientException $e) {
+      \Drupal::logger('islandora_log_404_cleaner')->error('Caught exception when pinging media: ' . $e->getMessage() . "\n");
+    }
+  }
+
+  // Now that we have a list of media that do in fact exist, delete the entries from the watchdog table.
+  if (count($stale_not_founds) > 0) {
+    foreach ($stale_not_founds as $wid) {
+      $delete_query = \Drupal::database()->delete('watchdog');
+      $delete_query->condition('wid', $wid);
+      $delete_query->execute();
+    }
+  }
+}
