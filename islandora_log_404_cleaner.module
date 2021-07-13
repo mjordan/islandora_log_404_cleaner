@@ -9,7 +9,8 @@ function islandora_log_404_cleaner_cron() {
 
 function islandora_log_404_cleaner_remove_entries() {
   $database = \Drupal::database();
-  $entries_result = $database->query("SELECT wid, location FROM {watchdog} WHERE type = 'page not found' AND location LIKE '%_format=json'");
+  // Query covers both _format=json and _format=jsonld.
+  $entries_result = $database->query("SELECT wid, location FROM {watchdog} WHERE type = 'page not found' AND location LIKE '%_format=json%'");
   $stale_not_founds = [];
   foreach ($entries_result as $row) {
     $client = \Drupal::httpClient();
